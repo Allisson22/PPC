@@ -2,7 +2,8 @@ from random import *
 from multiprocessing import Process, Manager
 import socket
 import sysv_ipc
-
+import signal
+import os
 #####INITIALISATION DICOS#####
 
 couleurs = ["bleu", "rouge", "vert", "noir", "jaune", "orange"]
@@ -49,7 +50,7 @@ def suite():
 
 #####COMMUNICATION######
 
-
+child_processes = []
 
 def message_client(socket_player,message,retour = "Nothing"):
     socket_player.sendall(message.encode())
@@ -69,16 +70,12 @@ def player_main(key,data,socket_player) :
         print(2,data["hand"])
         print(message_client(socket_player,f"0 {data['hand']}"))
         print(message_client(socket_player,"1 Nombre de joueurs"))
-
-def client_handler(s, a):
-    with s:
-        print("Connected to client: ", a)
-        data = s.recv(1024)
-        while len(data):
-            s.sendall(data)
-            data = s.recv(1024)
-        print("Disconnecting from client: ", a)
             
+def stop_handler(signum, frame):
+    print("Received signal to stop the game.")
+    for pid in child_processes:
+        os.kill(pid, signal.SIGTERM)
+    sys.exit(0)
 
 
 ######MAIN######
@@ -100,18 +97,27 @@ if __name__ == '__main__':
                 gros_dico = manager.dict()
                 gros_dico = {}
                 gros_dico["deck"] = deck(nb_joueurs)
-                gros_dico["hand"] = hand(2,deck(2))
+                gros_dico["hand"] = hand(nb_joueurs,deck(nb_joueurs))
                 gros_dico["suite"] = suite()
                 gros_dico["information_token"] = information_token(nb_joueurs)
                 gros_dico["fuze_token"] = fuze_token()
+                gros_dico["turn"] = 0
 
-                p = Process(target=player_main, args=(client_socket, address))
+                p = Process(target=player_main, args=(os.getpid(), key, gros_dico, client_socket, signal.SIGTERM, 0))
                 p.start()
-             
-        for i in range (nb_joueurs-1):
-            client_socket, address = server_socket.accept()
-            p = Process(target=player_main, args=(client_socket, address, i+1))
-            p.start()
+                child_processes.append(p.pid)
+
+                for i in range(nb_joueurs - 1):
+                    client_socket, address = server_socket.accept()
+                    p = Process(target=player_main, args=(os.getpid(), key, gros_dico, client_socket, signal.SIGTERM, i + 1))
+                    p.start()
+                    child_processes.append(p.pid)
+
+                gros_dico["turn"] = 1
+
+
+
+                
 
 
 
