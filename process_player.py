@@ -2,21 +2,36 @@ import sysv_ipc
 import socket
 from multiprocessing import Process, Manager
 import time
+from random import *
 
-def action_possible(socket_player,nb_player,couleurs):
+def action_possible(socket_player,nb_player,couleurs,digit,data):
     message_client(socket_player,"0 C'est votre tour, voud pouvez :\n  Donner informations\n  Jouer une carte sur une suite")
     reponse = message_client(socket_player,"1 information ou jouer ?",["information","jouer"])
     if reponse == "information" :
-        joueur = message_client(socket_player,f"1 Quel Joueur ? (de 1 à {nb_player})",[f"{i}" for i in range(1,nb_player+1)])
+        l = [f"{i}" for i in range(1,nb_player+1)]
+        l.pop(digit)
+        joueur = message_client(socket_player,f"1 Quel Joueur ? (de 1 à {nb_player} sans {digit+1})",l)
         type = message_client(socket_player,"1 couleur ou numéro ?",["couleur","numéro"])
         if type == "couleur" :
-            val = message_client(socket_player,"1 Quelle couleur ? ({couleurs})",couleurs)
+            val = message_client(socket_player,f"1 Quelle couleur ? ({couleurs})",couleurs)
         elif type == "numéro" :
             val = message_client(socket_player,"1 Quel numéro ? (de 1 à 5)",["1","2","3","4","5"])
-        annoncer_cartes(joueur,val)
+        annoncer_cartes(int(joueur)-1,val)
     if reponse == "jouer" :
         carte = message_client(socket_player,"1 Quelle carte ? (de 1 à 5)",["1","2","3","4","5"])
-        jouer_carte(carte)
+        jouer_carte(int(carte)-1,digit,data)
+
+def jouer_carte(index_carte,digit,data):
+    (couleur,num) = data["hand"][f"{digit}"].pop(index_carte)
+    if data["suite"][couleur][num] == False and data["suite"][couleur][num-1] == True :
+        data["suite"][couleur][num] == True
+    else :
+        data["fuse_token"] -=1
+    nouvelle_carte = data["deck"].pop(random.randint(0,len(data["deck"]-1)))
+    data["hand"][f"{digit}"].insert(index_carte,nouvelle_carte)
+
+def annoncer_cartes(j,v):
+    print(j,v)
 
 
 def affichage_main(socket_player,hand,handplayer,digit):
@@ -29,7 +44,7 @@ def affichage_main(socket_player,hand,handplayer,digit):
 
 def message_client(socket_player,message,retour = "Nothing"):
     socket_player.sendall(message.encode())
-    reponse = socket_player.recv(1024)
+    reponse = socket_player.recv(1024).decode()
     if retour != "Nothing" and reponse not in retour:
         reponse = message_client(socket_player,message,retour)
     return reponse
@@ -39,9 +54,13 @@ def player_main(key,data,socket_player,digit_player) :
     que = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
     on = True
     handplayer = [["inconnu","inconnu"],["inconnu","inconnu"],["inconnu","inconnu"],["inconnu","inconnu"],["inconnu","inconnu"]]
+    nb_player = 4
+    couleurs =  ["bleu","rouge","jaune","vert"]
     while on :
         affichage_main(socket_player,data["hand"],handplayer,digit_player)
-        time.sleep(100000)
+        time.sleep(15)
+        action_possible(socket_player,nb_player,couleurs,digit_player)
+        time.sleep(10000)
         
 
 
@@ -51,7 +70,7 @@ def player_main(key,data,socket_player,digit_player) :
 if __name__ == "__main__" :
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         HOST = "localhost"
-        PORT = 1799
+        PORT = 1800
         key = 128
 
         server_socket.bind((HOST, PORT))

@@ -1,7 +1,7 @@
 import socket
 
 HOST = "localhost"
-PORT = 1799
+PORT = 1800
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((HOST, PORT))
