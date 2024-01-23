@@ -1,10 +1,12 @@
-from random import *
-from multiprocessing import Process, Manager
 import socket
 import sysv_ipc
 import time
 import os
 import threading
+import signal
+import sys
+from multiprocessing import Process, Manager
+from random import randint
 
 #####INITIALISATION DICOS#####
 
@@ -60,24 +62,30 @@ def message_client(socket_player, message, retour="Nothing"):
             reponse = message_client(socket_player, message, retour)
     return reponse
 
-
-def player_main(data, socket_player, que, stop_signal):
+def stop_jeu(sig, frame):
+    print("Received signal to stop the game.")
+    if sig == signal.SIGUSR1:
+        for pid in child_processes:
+            os.kill(pid, signal.SIGTERM)
+            
+def player_main(data, socket_player, que):
     on = True
     while on:
-        if stop_signal.is_set():
-            message_client(socket_player, '0 Fermeture')
-            on = False
+        time.sleep(1)  # Ajoutez une courte pause pour éviter la surcharge CPU
+        # Vérifiez si le signal SIGUSR1 est reçu
+        message_client(socket_player, '0 Fermeture')
+        on = False
 
 ######MAIN######
 
 if __name__ == '__main__':
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         HOST = "localhost"
-        PORT = 6691
+        PORT = 6708
         key = 128
         nb_joueurs = 0
         child_processes = []
-        signal.signal(signal.SIGUSR1, handler)
+        signal.signal(signal.SIGUSR1, stop_jeu)
 
         server_socket.bind((HOST, PORT))
         server_socket.listen(1)
@@ -102,14 +110,14 @@ if __name__ == '__main__':
                 if key is not None:
                     que = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
-                p = Process(target=player_main, args=(gros_dico, client_socket, que, stop_signal))
+                p = Process(target=player_main, args=(gros_dico, client_socket, que))
                 p.start()
                 child_processes.append(p.pid)
                 message_client(client_socket, "0 Vous êtes le joueur 0")
 
                 for i in range(nb_joueurs - 1):
                     client_socket, address = server_socket.accept()
-                    p = Process(target=player_main, args=(gros_dico, client_socket, que, stop_signal))
+                    p = Process(target=player_main, args=(gros_dico, client_socket, que))
                     p.start()
                     child_processes.append(p.pid)
                     message_client(client_socket, f"0 Vous êtes le joueur {i + 1}")
@@ -117,10 +125,5 @@ if __name__ == '__main__':
                 gros_dico["turn"] = 1
 
                 time.sleep(5)
-                signal.signal(signal.SIGUSR1, handler)
-
-                if gros_dico["deck"] == []:
-                    signal.signal(signal.SIGUSR1, handler)
-
+                os.kill(p.pid, signal.SIGUSR1)
                 p.join()
-
