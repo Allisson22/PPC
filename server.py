@@ -5,11 +5,10 @@ import sysv_ipc
 import signal
 import time
 import os
+
 #####INITIALISATION DICOS#####
 
-couleurs = ["bleu", "rouge", "vert", "noir", "jaune", "orange"]
-
-def deck(nb_joueurs):
+def deck(nb_joueurs, couleurs):
     liste_cartes = []
     for i in range (nb_joueurs) :
         for un in range (3):
@@ -72,7 +71,7 @@ def player_main(data, socket_player):
         while on:
             print(2, data["hand"])
             time.sleep(10000)
-            
+            o
 def stop_handler(signum, frame):
     print("Received signal to stop the game.")
     for pid in child_processes:
@@ -86,7 +85,7 @@ def stop_handler(signum, frame):
 if __name__ == '__main__':
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         HOST = "localhost"
-        PORT = 6688
+        PORT = 6691
         key = 128
         nb_joueurs = 0
 
@@ -99,14 +98,13 @@ if __name__ == '__main__':
         with Manager() as manager:
             while True :
                 gros_dico = manager.dict()
-                gros_dico["deck"] = deck(nb_joueurs)
-                gros_dico["hand"] = hand(nb_joueurs, deck(nb_joueurs))
+                gros_dico["couleurs"] = ["bleu", "rouge", "vert", "noir", "jaune", "orange"]
+                gros_dico["deck"] = deck(nb_joueurs, gros_dico["couleurs"])
+                gros_dico["hand"] = hand(nb_joueurs, gros_dico["deck"])
                 gros_dico["suite"] = suite()
                 gros_dico["information_token"] = information_token(nb_joueurs)
                 gros_dico["fuze_token"] = fuze_token()
                 gros_dico["turn"] = 0
-
-                # Add the 'key' to the gros_dico
                 gros_dico['key'] = key
 
                 # Pass the manager object and player_id directly to the target function
