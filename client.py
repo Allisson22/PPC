@@ -14,6 +14,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 rep = input("réponse> ")
                 client_socket.sendall(rep.encode())
             else :
-                client_socket.sendall(''.encode())
+                client_socket.sendall('Nothing'.encode())
             
 

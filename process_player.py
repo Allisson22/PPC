@@ -2,7 +2,15 @@ import sysv_ipc
 import socket
 from multiprocessing import Process, Manager
 
-
+def message_client(socket_player,message,retour = "Nothing"):
+    socket_player.sendall(message.encode())
+    reponse = socket_player.recv(1024)
+    if retour == "int" :
+        try :
+            reponse = int(reponse.decode())
+        except :
+            reponse = message_client(socket_player,message,retour)
+    return reponse
 
 
 def player_main(key,data,socket_player) :
@@ -10,13 +18,8 @@ def player_main(key,data,socket_player) :
     on = True
     while on :
         print(2,data["hand"])
-        mess = f"0 {data[f'hand']}"
-        socket_player.sendall(mess.encode())
-        _ = socket_player.recv(1024)
-        mess = "1 Nombre de joueurs"
-        socket_player.sendall(mess.encode())
-        mess = client_socket.recv(1024).decode()
-        print(mess)
+        print(message_client(socket_player,f"0 {data['hand']}"))
+        print(message_client(socket_player,"1 Nombre de joueurs"))
 
 
 
