@@ -33,6 +33,12 @@ def hand(nb_joueurs, liste_cartes):
             liste_cartes.pop(index)
     return dico_hand
 
+def couleurs (nb_joueurs, liste_couleurs) : 
+    couleurs_retenues = []
+    for i in range (nb_joueurs) :
+        couleurs_retenues.append(liste_couleurs[i])
+    return couleurs_retenues
+
 
 def information_token(nb_joueurs):
     nb_token = 3 * nb_joueurs + 3
@@ -44,10 +50,10 @@ def fuze_token():
     return nb_token
 
 
-def suite():
+def suite(liste_couleurs):
     dico_suite = {}
-    for i in range(5):
-        dico_suite[i] = [True, False, False, False, False, False]
+    for couleur in liste_couleurs:
+        dico_suite[f"{couleur}"] = [True, False, False, False, False, False]
     return dico_suite
 
 #####COMMUNICATION######
@@ -62,31 +68,36 @@ def message_client(socket_player, message, retour="Nothing"):
             reponse = message_client(socket_player, message, retour)
     return reponse
 
-def stop_jeu(sig, frame):
-    print("Received signal to stop the game.")
-    
-    if sig == signal.SIGUSR1:
-        for pid in child_processes:
-            os.kill(pid, signal.SIGTERM)
-            
+def stop_jeu(socket_player):
+    sig = signal.SIGUSR1
+    print(os.getpid(), "j'attends")
+    signal.sigwait([sig])
+    message_client(socket_player, '0 Fermeture')
+    print(os.getpid(), "je meurs")
+    time.sleep(5)
+    os.kill(os.getpid(), signal.SIGTERM)
+
 def player_main(data, socket_player, que):
     on = True
+    thread = threading.Thread(target=stop_jeu, args=(socket_player, ))
+    thread.start()
     while on:
-        time.sleep(1)  # Ajoutez une courte pause pour éviter la surcharge CPU
-        # Vérifiez si le signal SIGUSR1 est reçu
-        signal.signal(signal.SIGUSR1, stop_jeu)
-        message_client(socket_player, '0 Fermeture')
-        on = False
+        message_client(socket_player, '0 Waiting')
+        print(data)
+        time.sleep(5)
+
+
 
 ######MAIN######
 
 if __name__ == '__main__':
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         HOST = "localhost"
-        PORT = 6709
+        PORT = 6729
         key = 128
         nb_joueurs = 0
         child_processes = []
+        liste_couleurs = ["bleu", "rouge", "vert", "noir", "jaune", "orange", "violet"]
 
 
         server_socket.bind((HOST, PORT))
@@ -99,10 +110,10 @@ if __name__ == '__main__':
         with Manager() as manager:
             while True:
                 gros_dico = manager.dict()
-                gros_dico["couleurs"] = ["bleu", "rouge", "vert", "noir", "jaune", "orange"]
+                gros_dico["couleurs"] = couleurs(nb_joueurs, liste_couleurs)
                 gros_dico["deck"] = deck(nb_joueurs, gros_dico["couleurs"])
                 gros_dico["hand"] = hand(nb_joueurs, gros_dico["deck"])
-                gros_dico["suite"] = suite()
+                gros_dico["suite"] = suite(gros_dico["couleurs"])
                 gros_dico["information_token"] = information_token(nb_joueurs)
                 gros_dico["fuze_token"] = fuze_token()
                 gros_dico["turn"] = 0
@@ -119,6 +130,7 @@ if __name__ == '__main__':
 
                 for i in range(nb_joueurs - 1):
                     client_socket, address = server_socket.accept()
+                    print("Connected to client: ", address)
                     p = Process(target=player_main, args=(gros_dico, client_socket, que))
                     p.start()
                     child_processes.append(p.pid)
@@ -127,6 +139,8 @@ if __name__ == '__main__':
                 gros_dico["turn"] = 1
 
                 time.sleep(5)
+                print(child_processes)
                 for pid in child_processes:
                     os.kill(pid, signal.SIGUSR1)
-                p.join()
+                while True :
+                    pass
