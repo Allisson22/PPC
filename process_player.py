@@ -19,7 +19,7 @@ def action_possible(socket_player,nb_player,couleurs,digit,data,key):
                 val = message_client(socket_player,"1 Quel numéro ? (de 1 à 5)",["1","2","3","4","5"])
             annoncer_cartes(int(joueur)-1,val,digit,key,nb_player,data)
         else :
-            message_client(socket_player,"0 Vous n'avez plus de jetons information")
+            message_client(socket_player,"0 Vous n'avez plus de jetons d'information")
             action_possible(socket_player,nb_player,couleurs,digit,data,key)
     if reponse == "jouer" :
         carte = message_client(socket_player,"1 Quelle carte ? (de 1 à 5)",["1","2","3","4","5"])
@@ -62,11 +62,33 @@ def receive_message(socket_player,key,digit,handplayer,hand):
 
 
 def affichage_main(socket_player,hand,handplayer,digit):
-    message_client(socket_player, "0 =================================================")
     message_client(socket_player,f"0 Votre main :\n  {handplayer}")
     for i in hand.keys() :
         if int(i) != digit :
             message_client(socket_player,f"0 Joueur {i} :\n  {hand[i]}")
+
+def affichage_utilitaire(socket_player,data,digit,handplayer):
+    message_client(socket_player,f"0 Il reste {data['fuse_token']} jetons d'amorçage, {data['information_token']} jetons d'information")
+    message_client(socket_player,f"0 Voici l'état des suites :")
+    for i in range(6):
+        message = "0 "
+        for j in range(len(data["couleurs"])) :
+            if i == 1:
+                message += f"{data['couleurs'][j]}  "
+            else :
+                if data["suite"][data['couleurs'][j]] == True :
+                    message += f"{i}  "
+                else :
+                    message += "   "
+                for t in range(len(data['couleurs'][j])) :
+                    message += " "
+        message_client(socket_player,message)
+    message_client(socket_player,f"0 Votre main :\n  {handplayer}")
+    for i in data["hand"].keys() :
+        if int(i) != digit :
+            message_client(socket_player,f"0 Joueur {i} :\n  {data['hand'][i]}")
+
+
     
 
 def message_client(socket_player,message,retour = "Nothing"):
