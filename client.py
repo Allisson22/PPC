@@ -1,7 +1,7 @@
 import socket
 
 HOST = "localhost"
-PORT = 1798
+PORT = 1800
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((HOST, PORT))
@@ -9,7 +9,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         while on :
             mess = client_socket.recv(1024).decode()
             val, message = mess[0], mess[2:]
-            print(val,message)
+            print(message)
             if int(val) == 1 :
                 rep = input("réponse> ")
                 client_socket.sendall(rep.encode())
