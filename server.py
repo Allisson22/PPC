@@ -72,31 +72,31 @@ def message_client(socket_player, message, retour="Nothing"):
     return reponse
 
 def player_main(data, socket_player, que, sem_server, sem_player):
-    
-    message_client(socket_player, '0 Waiting')
-    print(os.getpid(), "j'attends")
-    
-    def handler(sig, frame):
-        if sig == signal.SIGUSR1 :
-            message_client(socket_player, '0 Le deck est vide')
-            os.kill(os.getpid(), signal.SIGKILL)
-        if sig == signal.SIGUSR2 :
-            message_client(socket_player, '0 Un 5 a été défaussé')
-            os.kill(os.getpid(), signal.SIGKILL)
-        if sig == signal.SIGINT :
-            message_client(socket_player, '0 Tous les fuze token ont été utilisés')
-            os.kill(os.getpid(), signal.SIGKILL)
-    
-    signal.signal(signal.SIGUSR1, handler)
-    signal.signal(signal.SIGUSR2, handler)
-    signal.signal(signal.SIGINT, handler)
+    on = True
+    while on:
+        print(os.getpid(), "on me handle")
+        def handler(sig, frame):
+            if sig == signal.SIGUSR1 :
+                message_client(socket_player, '0 Le deck est vide')
+                os.kill(os.getpid(), signal.SIGKILL)
+            if sig == signal.SIGUSR2 :
+                message_client(socket_player, '0 Un 5 a été défaussé')
+                print(os.getpid())
+                os.kill(os.getpid(), signal.SIGKILL)
+            if sig == signal.SIGINT :
+                message_client(socket_player, '0 Tous les fuze token ont été utilisés')
+                os.kill(os.getpid(), signal.SIGKILL)
+        
+        signal.signal(signal.SIGUSR1, handler)
+        signal.signal(signal.SIGUSR2, handler)
+        signal.signal(signal.SIGINT, handler)
 
 ######MAIN######
 
 if __name__ == '__main__':
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         HOST = "localhost"
-        PORT = 6787
+        PORT = 6812
         key = 128
         nb_joueurs = 0
         child_processes = []
@@ -144,30 +144,37 @@ if __name__ == '__main__':
                 gros_dico["turn"] = 0
                 time.sleep(5)
                 print(child_processes)
-
+            
                 memory = gros_dico["fuse_token"]
                 on = True
                 while on :
-                    gros_dico["fuse_token"] = 3
+                    gros_dico["fuse_token"] = 0
                     sem_player.acquire()
                     print(child_processes)
                     if gros_dico["fuse_token"] == 0 :
                         if memory != 1 :
+                            print(child_processes)
                             for pid in child_processes:
+                                print(pid)
                                 os.kill(pid, signal.SIGUSR2)
-                                on = False
-                                que.remove()
+                                time.sleep(5)
+                            que.remove()
+                            on = False
+
                         else :
                             for pid in child_processes:
                                 os.kill(pid, signal.SIGINT)
-                                on = False
-                                que.remove()
+                                time.sleep(5)
+                            que.remove()
+                            on = False
+                                
                         
                     if gros_dico["deck"] == 0 :
                         for pid in child_processes:
                             os.kill(pid, signal.SIGUSR1)
-                            on = False
-                            que.remove()
+                            time.sleep(5)
+                        que.remove()
+                        on = False
                     
                     else :
                         print("je suis dans la boucle")

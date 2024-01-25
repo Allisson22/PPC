@@ -1,7 +1,7 @@
 import socket
 
 HOST = "localhost"
-PORT = 6787
+PORT = 6812
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -16,7 +16,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 client_socket.sendall(rep.encode())
             elif (message == "Le deck est vide" or message == "Tous les fuze token ont été utilisés" or message == "Un 5 a été défaussé") :
                 on = False
-                
             else :
                 client_socket.sendall('Nothing'.encode())
             
