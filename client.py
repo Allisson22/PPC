@@ -1,7 +1,7 @@
 import socket
 
 HOST = "localhost"
-PORT = 6729
+PORT = 6736
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -9,7 +9,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         on = True
         while on :
             mess = client_socket.recv(1024).decode()
-            print(mess)
             val, message = mess[0], mess[2:]
             print(message)
             if int(val) == 1 :

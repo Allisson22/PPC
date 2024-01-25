@@ -10,15 +10,15 @@ def action_possible(socket_player,digit,data,handplayer):
     reponse = message_client(socket_player,"1 information ou jouer ?",["information","jouer"])
     if reponse == "information" :
         if data["information_token"] > 0 :
-            l = [f"{i}" for i in range(1,data["nb_player"]+1)]
+            l = [f"{i}" for i in range(1,data["nb_joueurs"]+1)]
             l.pop(digit)
-            joueur = message_client(socket_player,f"1 Quel Joueur ? (de 1 à {data['nb_player']} sans {digit+1})",l)
+            joueur = message_client(socket_player,f"1 Quel Joueur ? (de 1 à {data['nb_joueurs']} sans {digit+1})",l)
             type = message_client(socket_player,"1 couleur ou numéro ?",["couleur","numéro"])
             if type == "couleur" :
                 val = message_client(socket_player,f"1 Quelle couleur ? ({data['couleurs']})",data['couleurs'])
             elif type == "numéro" :
                 val = message_client(socket_player,"1 Quel numéro ? (de 1 à 5)",["1","2","3","4","5"])
-            annoncer_cartes(int(joueur)-1,val,digit,data)
+            annoncer_cartes(int(joueur),val,digit,data)
         else :
             message_client(socket_player,"0 Vous n'avez plus de jetons d'information")
             action_possible(socket_player,digit,data)
@@ -41,23 +41,24 @@ def jouer_carte(index_carte,digit,data,handplayer):
     data["hand"][f"{digit}"].insert(index_carte,nouvelle_carte)
 
 def annoncer_cartes(joueur,val,digit,data):
-    message = f"Joueur {digit} a annoncé au Joueur {joueur} ses cartes {val}"
-    que = sysv_ipc.MessageQueue(key)
+    message = f"Joueur {digit+1} a annoncé au Joueur {joueur} ses cartes {val}"
+    que = sysv_ipc.MessageQueue(data["key"])
     data["information_token"] -=1
-    for i in range(data['nb_player']) :
+    for i in range(data['nb_joueurs']) :
         if i != digit :
             que.send(message.encode(), type = i)
 
-def receive_message(socket_player,key,digit,handplayer,hand):
+def receive_message(socket_player,digit,handplayer,data):
     while True :
-        que = sysv_ipc.MessageQueue(key)
-        message = que.receive(type = digit).decode()
+        que = sysv_ipc.MessageQueue(data["key"])
+        message,_ = que.receive(type = digit)
+        message = message.decode()
         info = message.split()
-        if info[6] == f"{digit}":
+        if info[6] == f"{digit+1}":
             val = info[9]
             for i in range(5):
                 for j in range(2):
-                    if hand[i][j] == val:
+                    if data["hand"][f"{digit}"][i][j] == val:
                         handplayer[i][j] = val
             message_client(socket_player,f"0 Le joueur {info[1]} vous a annoncé vos cartes {val}, voici votre main :\n  {handplayer}")
         else :
@@ -68,7 +69,7 @@ def affichage_main(socket_player,hand,handplayer,digit):
     message_client(socket_player,f"0 Votre main :\n  {handplayer}")
     for i in hand.keys() :
         if int(i) != digit :
-            message_client(socket_player,f"0 Joueur {i} :\n  {hand[i]}")
+            message_client(socket_player,f"0 Joueur {int(i)+1} :\n  {hand[i]}")
 
 def affichage_utilitaire(socket_player,data,digit,handplayer):
     message_client(socket_player,f"0 Il reste {data['fuse_token']} jetons d'amorçage, {data['information_token']} jetons d'information")
@@ -89,7 +90,7 @@ def affichage_utilitaire(socket_player,data,digit,handplayer):
     message_client(socket_player,f"0 Votre main :\n  {handplayer}")
     for i in data["hand"].keys() :
         if int(i) != digit :
-            message_client(socket_player,f"0 Joueur {i} :\n  {data['hand'][i]}")
+            message_client(socket_player,f"0 Joueur {int(i)+1} :\n  {data['hand'][i]}")
 
 
 def message_client(socket_player,message,retour = "Nothing"):
@@ -103,39 +104,21 @@ def message_client(socket_player,message,retour = "Nothing"):
 def player_main(data,socket_player,digit_player) :
     on = True
     handplayer = [["?","?"],["?","?"],["?","?"],["?","?"],["?","?"]]
-    message_client(socket_player,f"0 Vous êtes le joueur {digit_player}")
+    message_client(socket_player,f"0 Vous êtes le joueur {digit_player+1}")
     affichage_main(socket_player,data["hand"],handplayer,digit_player)
-
+    thread1 = threading.Thread(target=receive_message, args=(socket_player,digit_player,handplayer,data))
+    thread1.start()
     if data["turn"] == -1 :
         message_client(socket_player,"0 En attente de joueur")
     while data["turn"] == -1 :
         pass
-        message_client(socket_player,"0 Le jeu commence !")
+    message_client(socket_player,"0 Le jeu commence !")
     while on :
         if data["turn"] % data["nb_joueurs"] == digit_player :
-            affichage_main(socket_player,data["hand"],handplayer,digit_player)
+            affichage_utilitaire(socket_player,data,digit_player,handplayer)
             time.sleep(5)
-            action_possible(socket_player,nb_player,couleurs,digit_player,data,key)
+            action_possible(socket_player,digit_player,data,handplayer)
+            data["turn"] +=1
 
             
 
-
-
-
-
-if __name__ == "__main__" :
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        HOST = "localhost"
-        PORT = 1800
-        key = 128
-
-        server_socket.bind((HOST, PORT))
-        server_socket.listen(1)
-        client_socket, address = server_socket.accept()
-        que = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
-        with Manager() as manager :
-            data = manager.dict()
-            data["hand"] = {"0" : [("bleu",1),("rouge",5),("bleu",2),("jaune",2),("jaune",1)], "1" : [("bleu",1),("rouge",5),("bleu",2),("jaune",2),("jaune",1)], "2" : [("bleu",1),("rouge",5),("bleu",2),("jaune",2),("jaune",1)] }
-            player = Process(target=player_main, args=(key,data,client_socket,1))
-            player.start()
-            player.join()
