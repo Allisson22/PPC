@@ -1,7 +1,7 @@
 import socket
 
 HOST = "localhost"
-PORT = 6729
+PORT = 6761
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -15,6 +15,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             if int(val) == 1 :
                 rep = input("réponse> ")
                 client_socket.sendall(rep.encode())
+            elif (message == "Fermeture") :
+                 on = False
+                
             else :
                 client_socket.sendall('Nothing'.encode())
             
