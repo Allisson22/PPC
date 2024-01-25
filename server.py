@@ -7,6 +7,7 @@ import signal
 import sys
 from multiprocessing import Process, Manager
 from random import randint
+from process_player import *
 
 #####INITIALISATION DICOS#####
 
@@ -35,6 +36,7 @@ def hand(nb_joueurs, liste_cartes):
 
 def couleurs (nb_joueurs, liste_couleurs) : 
     couleurs_retenues = []
+
     for i in range (nb_joueurs) :
         couleurs_retenues.append(liste_couleurs[i])
     return couleurs_retenues
@@ -115,9 +117,10 @@ if __name__ == '__main__':
                 gros_dico["hand"] = hand(nb_joueurs, gros_dico["deck"])
                 gros_dico["suite"] = suite(gros_dico["couleurs"])
                 gros_dico["information_token"] = information_token(nb_joueurs)
-                gros_dico["fuze_token"] = fuze_token()
-                gros_dico["turn"] = 0
+                gros_dico["fuse_token"] = fuze_token()
+                gros_dico["turn"] = -1
                 gros_dico['key'] = key
+                gros_dico["nb_joueurs"] = nb_joueurs
 
                 key = gros_dico.get('key')
                 if key is not None:
@@ -136,7 +139,7 @@ if __name__ == '__main__':
                     child_processes.append(p.pid)
                     message_client(client_socket, f"0 Vous êtes le joueur {i + 1}")
 
-                gros_dico["turn"] = 1
+                gros_dico["turn"] = 0
 
                 time.sleep(5)
                 print(child_processes)
