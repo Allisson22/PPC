@@ -96,7 +96,7 @@ def player_main(data, socket_player, que, sem_server, sem_player):
 if __name__ == '__main__':
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         HOST = "localhost"
-        PORT = 6761
+        PORT = 6787
         key = 128
         nb_joueurs = 0
         child_processes = []
@@ -128,7 +128,7 @@ if __name__ == '__main__':
                 if key is not None:
                     que = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
-                p = Process(target=player_main, args=(gros_dico, client_socket, que, sem_server, sem_player ))
+                p = Process(target=player_main, args=(gros_dico, client_socket, que, sem_server, sem_player))
                 p.start()
                 child_processes.append(p.pid)
                 message_client(client_socket, "0 Vous êtes le joueur 0")
@@ -148,17 +148,13 @@ if __name__ == '__main__':
                 memory = gros_dico["fuse_token"]
                 on = True
                 while on :
-                    time.sleep(5)
-                    gros_dico["fuse_token"] = 0
+                    gros_dico["fuse_token"] = 3
                     sem_player.acquire()
                     print(child_processes)
                     if gros_dico["fuse_token"] == 0 :
                         if memory != 1 :
                             for pid in child_processes:
-                                print(os.getpid(), "0 dico vide")
-                                print(pid)
                                 os.kill(pid, signal.SIGUSR2)
-                                time.sleep(5)
                                 on = False
                                 que.remove()
                         else :
@@ -178,7 +174,6 @@ if __name__ == '__main__':
                     
                     memory = gros_dico["fuse_token"]
                     sem_server.release()
-
 
                 while True :
                     pass
