@@ -3,8 +3,9 @@ import socket
 from multiprocessing import Process, Manager
 import time
 from random import *
+import threading
 
-def action_possible(socket_player,digit,data):
+def action_possible(socket_player,digit,data,handplayer):
     message_client(socket_player,"0 C'est votre tour, voud pouvez :\n  Donner informations\n  Jouer une carte sur une suite")
     reponse = message_client(socket_player,"1 information ou jouer ?",["information","jouer"])
     if reponse == "information" :
@@ -23,9 +24,9 @@ def action_possible(socket_player,digit,data):
             action_possible(socket_player,digit,data)
     if reponse == "jouer" :
         carte = message_client(socket_player,"1 Quelle carte ? (de 1 à 5)",["1","2","3","4","5"])
-        jouer_carte(int(carte)-1,digit,data)
+        jouer_carte(int(carte)-1,digit,data,handplayer)
 
-def jouer_carte(index_carte,digit,data,):
+def jouer_carte(index_carte,digit,data,handplayer):
     (couleur,num) = data["hand"][f"{digit}"].pop(index_carte)
     if data["suite"][couleur][num] == False and data["suite"][couleur][num-1] == True :
         data["suite"][couleur][num] == True
@@ -36,6 +37,7 @@ def jouer_carte(index_carte,digit,data,):
         if num == 5 :
             data["fuse_token"] = 0
     nouvelle_carte = data["deck"].pop(random.randint(0,len(data["deck"]-1)))
+    handplayer[index_carte] = ["?","?"]
     data["hand"][f"{digit}"].insert(index_carte,nouvelle_carte)
 
 def annoncer_cartes(joueur,val,digit,data):
@@ -102,11 +104,13 @@ def player_main(data,socket_player,digit_player) :
     on = True
     handplayer = [["?","?"],["?","?"],["?","?"],["?","?"],["?","?"]]
     message_client(socket_player,f"0 Vous êtes le joueur {digit_player}")
-    affichage_utilitaire(socket_player,data,digit_player,handplayer)
+    affichage_main(socket_player,data["hand"],handplayer,digit_player)
+
     if data["turn"] == -1 :
         message_client(socket_player,"0 En attente de joueur")
     while data["turn"] == -1 :
         pass
+        message_client(socket_player,"0 Le jeu commence !")
     while on :
         if data["turn"] % data["nb_joueurs"] == digit_player :
             affichage_main(socket_player,data["hand"],handplayer,digit_player)
