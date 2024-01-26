@@ -5,9 +5,8 @@ import os
 import threading
 import signal
 import sys
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Manager, Semaphore
 from random import randint
-from threading import Semaphore
 from process_player import *
 
 
@@ -60,36 +59,6 @@ def suite(liste_couleurs):
         dico_suite[f"{couleur}"] = [True, False, False, False, False, False]
     return dico_suite
 
-#####COMMUNICATION######
-
-def message_client(socket_player, message, retour="Nothing"):
-    socket_player.sendall(message.encode())
-    reponse = socket_player.recv(1024)
-    if retour == "int":
-        try:
-            reponse = int(reponse.decode())
-        except:
-            reponse = message_client(socket_player, message, retour)
-    return reponse
-
-def player_main(data, socket_player, que, sem_server, sem_player):
-    on = True
-    while on:
-        def handler(sig, frame):
-            if sig == signal.SIGUSR1 :
-                message_client(socket_player, '0 Le deck est vide')
-                os.kill(os.getpid(), signal.SIGKILL)
-            if sig == signal.SIGUSR2 :
-                message_client(socket_player, '0 Un 5 a été défaussé')
-                os.kill(os.getpid(), signal.SIGKILL)
-            if sig == signal.SIGINT :
-                message_client(socket_player, '0 Tous les fuze token ont été utilisés')
-                os.kill(os.getpid(), signal.SIGKILL)
-        
-        signal.signal(signal.SIGUSR1, handler)
-        signal.signal(signal.SIGUSR2, handler)
-        signal.signal(signal.SIGINT, handler)
-
 
 ######MAIN######
 
@@ -121,56 +90,58 @@ if __name__ == '__main__':
             gros_dico["turn"] = -1
             gros_dico['key'] = key
             gros_dico["nb_joueurs"] = nb_joueurs
+            gros_dico['victoire'] = False
 
             key = gros_dico.get('key')
             if key is not None:
                 que = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
-            p = Process(target=player_main, args=(gros_dico, client_socket, que, sem_server, sem_player))
+            p = Process(target=player_main, args=(gros_dico, client_socket, 0, sem_server, sem_player))
             p.start()
             liste_processes.append(p)
             child_processes.append(p.pid)
-            message_client(client_socket, "0 Vous êtes le joueur 0")
 
             for i in range(nb_joueurs - 1):
                 client_socket, address = server_socket.accept()
-                p = Process(target=player_main, args=(gros_dico, client_socket, que, sem_server, sem_player))
+                p = Process(target=player_main, args=(gros_dico, client_socket, i+1,sem_server, sem_player))
                 p.start()
                 liste_processes.append(p)
                 child_processes.append(p.pid)
-                message_client(client_socket, f"0 Vous êtes le joueur {i + 1}")
 
             gros_dico["turn"] = 0
-            time.sleep(5)
         
             memory = gros_dico["fuse_token"]
-            memory = 1
             on = True
             while on :
-                gros_dico["fuse_token"] = 0
-                sem_player.acquire()
-                if gros_dico["fuse_token"] == 0 :
+                sem_server.acquire()
+                compteur = 0
+                for i in gros_dico["suite"].keys() :
+                    if gros_dico["suite"][i][5] == True :
+                        compteur +=1
+                if compteur == gros_dico["nb_joueurs"] :
+                    gros_dico["victoire"] = True
+                    for pid in child_processes:
+                        os.kill(pid, signal.SIGUSR1)
+                elif gros_dico["fuse_token"] == 0 :
                     if memory != 1 :
                         for pid in child_processes:
                             os.kill(pid, signal.SIGUSR2)
                         on = False
-
                     else :
                         for pid in child_processes:
                             os.kill(pid, signal.SIGINT)
-                        on = False
-                            
-                    
-                if gros_dico["deck"] == 0 :
+                        on = False   
+                elif len(gros_dico["deck"]) == 0 :
                     for pid in child_processes:
                         os.kill(pid, signal.SIGUSR1)
                     on = False
-                
+
                 else :
                     print("je suis dans la boucle")
                 
                 memory = gros_dico["fuse_token"]
-                sem_server.release()
+                time.sleep(5)
+                sem_player.release()
             
 
             for p in liste_processes :

@@ -4,6 +4,8 @@ from multiprocessing import Process, Manager
 import time
 from random import *
 import threading
+import signal
+import os
 
 def action_possible(socket_player,digit,data,handplayer):
     message_client(socket_player,"0 C'est votre tour, voud pouvez :\n  Donner informations\n  Jouer une carte sur une suite")
@@ -27,18 +29,20 @@ def action_possible(socket_player,digit,data,handplayer):
         jouer_carte(int(carte)-1,digit,data,handplayer)
 
 def jouer_carte(index_carte,digit,data,handplayer):
-    (couleur,num) = data["hand"][f"{digit}"].pop(index_carte)
+    (couleur,num) = data["hand"][f"{digit}"][index_carte]
+    print(couleur,num)
     if data["suite"][couleur][num] == False and data["suite"][couleur][num-1] == True :
         data["suite"][couleur][num] == True
+        print(data["suite"])
         if num == 5 :
             data["information_token"] += 1
     else :
         data["fuse_token"] -=1
         if num == 5 :
             data["fuse_token"] = 0
-    nouvelle_carte = data["deck"].pop(randint(0,len(data["deck"]-1)))
+    nouvelle_carte = data["deck"].pop(randint(0,len(data["deck"])-1))
     handplayer[index_carte] = ["?","?"]
-    data["hand"][f"{digit}"].insert(index_carte,nouvelle_carte)
+    data["hand"][f"{digit}"][index_carte] = nouvelle_carte
     que = sysv_ipc.MessageQueue(data["key"])
     message = f"Joueur {digit+1} a joué un {num} {couleur}"
     for i in range(data['nb_joueurs']) :
@@ -59,6 +63,7 @@ def receive_message(socket_player,digit,handplayer,data):
         message,_ = que.receive(type = digit+1)
         message = message.decode()
         info = message.split()
+        message_client(socket_player,f"0 ###")
         if info[3] == "annoncé" and info[6] == f"{digit+1}":
             val = info[9]
             for i in range(5):
@@ -68,7 +73,8 @@ def receive_message(socket_player,digit,handplayer,data):
             message_client(socket_player,f"0 Le joueur {info[1]} vous a annoncé vos cartes {val}, voici votre main :\n  {handplayer}")
         else :
             message_client(socket_player,f"0 {message}")
-        message_client(socket_player,f"0 Fin du tour {data['turn']}")
+        message_client(socket_player,f"0 ###")
+
 
 
 def affichage_main(socket_player,hand,handplayer,digit):
@@ -84,14 +90,14 @@ def affichage_utilitaire(socket_player,data,digit,handplayer):
     for i in range(6):
         message = "0 "
         for j in range(len(data["couleurs"])) :
-            if i == 1:
+            if i == 0:
                 message += f"{data['couleurs'][j]}  "
             else :
-                if data["suite"][data['couleurs'][j]] == True :
+                if data["suite"][data['couleurs'][j]][i] == True :
                     message += f"{i}  "
                 else :
                     message += "   "
-                for t in range(len(data['couleurs'][j])-1) :
+                for _ in range(len(data['couleurs'][j])-1) :
                     message += " "
         message_client(socket_player,message)
     message_client(socket_player,f"0 Votre main :\n  {handplayer}")
@@ -109,8 +115,26 @@ def message_client(socket_player,message,retour = "Nothing"):
     return reponse
 
 
-def player_main(data,socket_player,digit_player) :
+def player_main(data,socket_player,digit_player,sem_server,sem_player) :
     on = True
+    def handler(sig, _):
+            if sig == signal.SIGUSR1 :
+                if data["victoire"] :
+                    message_client(socket_player, '0 Vous avez GAGNÉ !!!!!')
+                    os.kill(os.getpid(), signal.SIGKILL)
+                else :
+                    message_client(socket_player, '0 Le deck est vide')
+                    os.kill(os.getpid(), signal.SIGKILL)
+            if sig == signal.SIGUSR2 :
+                message_client(socket_player, '0 Un 5 a été défaussé')
+                os.kill(os.getpid(), signal.SIGKILL)
+            if sig == signal.SIGINT :
+                message_client(socket_player, '0 Tous les fuze token ont été utilisés')
+                os.kill(os.getpid(), signal.SIGKILL)
+
+    signal.signal(signal.SIGUSR1, handler)
+    signal.signal(signal.SIGUSR2, handler)
+    signal.signal(signal.SIGINT, handler)
     handplayer = [["?","?"],["?","?"],["?","?"],["?","?"],["?","?"]]
     message_client(socket_player,f"0 Vous êtes le joueur {digit_player+1}")
     affichage_main(socket_player,data["hand"],handplayer,digit_player)
@@ -123,11 +147,12 @@ def player_main(data,socket_player,digit_player) :
     message_client(socket_player,"0 Le jeu commence !")
     while on :
         if data["turn"] % data["nb_joueurs"] == digit_player :
+            sem_player.acquire()
             affichage_utilitaire(socket_player,data,digit_player,handplayer)
-            time.sleep(5)
             action_possible(socket_player,digit_player,data,handplayer)
-            message_client(socket_player,f"0 Fin du tour {data['turn']}")
+            message_client(socket_player,"0 Fin de votre tour")
             data["turn"] +=1
+            sem_server.release()
 
             
 
