@@ -15,22 +15,22 @@ def deck(nb_joueurs, couleurs):
     liste_cartes = []
     for i in range(nb_joueurs):
         for un in range(3):
-            liste_cartes.append({couleurs[i], 1})
+            liste_cartes.append((couleurs[i], 1))
         for multiples in range(2):
             for nombre in [2, 3, 4]:
-                liste_cartes.append({couleurs[i], nombre})
-        liste_cartes.append({couleurs[i], 5})
+                liste_cartes.append((couleurs[i], nombre))
+        liste_cartes.append((couleurs[i], 5))
     return liste_cartes
 
 
 def hand(nb_joueurs, liste_cartes):
     dico_hand = {}
     for i in range(nb_joueurs):
-        dico_hand[i] = []
+        dico_hand[f"{i}"] = []
         for compteur in range(5):
             index = randint(0, len(liste_cartes)-1)
             carte_aleatoire = liste_cartes[index]
-            dico_hand[i].append(carte_aleatoire)
+            dico_hand[f"{i}"].append(carte_aleatoire)
             liste_cartes.pop(index)
     return dico_hand
 
@@ -64,7 +64,7 @@ def suite(liste_couleurs):
 if __name__ == '__main__':
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         HOST = "localhost"
-        PORT = 6736
+        PORT = 6742
         key = 128
         nb_joueurs = 0
         child_processes = []

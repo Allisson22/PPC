@@ -1,7 +1,7 @@
 import socket
 
 HOST = "localhost"
-PORT = 6736
+PORT = 6742
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
