@@ -8,6 +8,7 @@ import sys
 from multiprocessing import Process, Manager
 from random import randint
 from threading import Semaphore
+from process_player import *
 
 
 #####INITIALISATION DICOS#####
@@ -16,22 +17,22 @@ def deck(nb_joueurs, couleurs):
     liste_cartes = []
     for i in range(nb_joueurs):
         for un in range(3):
-            liste_cartes.append({couleurs[i], 1})
+            liste_cartes.append((couleurs[i], 1))
         for multiples in range(2):
             for nombre in [2, 3, 4]:
-                liste_cartes.append({couleurs[i], nombre})
-        liste_cartes.append({couleurs[i], 5})
+                liste_cartes.append((couleurs[i], nombre))
+        liste_cartes.append((couleurs[i], 5))
     return liste_cartes
 
 
 def hand(nb_joueurs, liste_cartes):
     dico_hand = {}
     for i in range(nb_joueurs):
-        dico_hand[i] = []
+        dico_hand[f"{i}"] = []
         for compteur in range(5):
             index = randint(0, len(liste_cartes)-1)
             carte_aleatoire = liste_cartes[index]
-            dico_hand[i].append(carte_aleatoire)
+            dico_hand[f"{i}"].append(carte_aleatoire)
             liste_cartes.pop(index)
     return dico_hand
 
@@ -89,6 +90,7 @@ def player_main(data, socket_player, que, sem_server, sem_player):
         signal.signal(signal.SIGUSR2, handler)
         signal.signal(signal.SIGINT, handler)
 
+
 ######MAIN######
 
 if __name__ == '__main__':
@@ -102,12 +104,11 @@ if __name__ == '__main__':
         liste_couleurs = ["bleu", "rouge", "vert", "noir", "jaune", "orange", "violet", "rose"]
         sem_server = Semaphore(0)
         sem_player = Semaphore(1)
-
         server_socket.bind((HOST, PORT))
         server_socket.listen(1)
         client_socket, address = server_socket.accept()
         while nb_joueurs < 2:
-            nb_joueurs = message_client(client_socket, "1 Nombre de joueurs", "int")
+            nb_joueurs = int(message_client(client_socket, "1 Nombre de joueurs",["1","2","3","4","5","6","7","8"]))
 
         with Manager() as manager:
             gros_dico = manager.dict()

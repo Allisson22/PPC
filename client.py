@@ -4,6 +4,7 @@ HOST = "localhost"
 PORT = 6816
 
 
+
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((HOST, PORT))
         on = True
