@@ -29,20 +29,24 @@ def action_possible(socket_player,digit,data,handplayer):
         jouer_carte(int(carte)-1,digit,data,handplayer)
 
 def jouer_carte(index_carte,digit,data,handplayer):
-    (couleur,num) = data["hand"][f"{digit}"][index_carte]
-    print(couleur,num)
+    pioche = data["deck"]
+    main_joueur = data["hand"]
+    (couleur,num) = main_joueur[f"{digit}"][index_carte]
     if data["suite"][couleur][num] == False and data["suite"][couleur][num-1] == True :
-        data["suite"][couleur][num] == True
-        print(data["suite"])
+        suite_correcte = data["suite"]
+        suite_correcte[couleur][num] = True
+        data["suite"] = suite_correcte
         if num == 5 :
             data["information_token"] += 1
     else :
         data["fuse_token"] -=1
         if num == 5 :
             data["fuse_token"] = 0
-    nouvelle_carte = data["deck"].pop(randint(0,len(data["deck"])-1))
+    nouvelle_carte = pioche.pop(randint(0,len(pioche)-1))
+    data["deck"] = pioche
     handplayer[index_carte] = ["?","?"]
-    data["hand"][f"{digit}"][index_carte] = nouvelle_carte
+    main_joueur[f"{digit}"][index_carte] = nouvelle_carte
+    data["hand"] = main_joueur
     que = sysv_ipc.MessageQueue(data["key"])
     message = f"Joueur {digit+1} a joué un {num} {couleur}"
     for i in range(data['nb_joueurs']) :

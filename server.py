@@ -24,8 +24,9 @@ def deck(nb_joueurs, couleurs):
     return liste_cartes
 
 
-def hand(nb_joueurs, liste_cartes):
+def hand(nb_joueurs, dico):
     dico_hand = {}
+    liste_cartes = dico["deck"]
     for i in range(nb_joueurs):
         dico_hand[f"{i}"] = []
         for compteur in range(5):
@@ -33,6 +34,7 @@ def hand(nb_joueurs, liste_cartes):
             carte_aleatoire = liste_cartes[index]
             dico_hand[f"{i}"].append(carte_aleatoire)
             liste_cartes.pop(index)
+    dico["deck"] = liste_cartes
     return dico_hand
 
 def couleurs (nb_joueurs, liste_couleurs) : 
@@ -83,7 +85,7 @@ if __name__ == '__main__':
             gros_dico = manager.dict()
             gros_dico["couleurs"] = couleurs(nb_joueurs, liste_couleurs)
             gros_dico["deck"] = deck(nb_joueurs, gros_dico["couleurs"])
-            gros_dico["hand"] = hand(nb_joueurs, gros_dico["deck"])
+            gros_dico["hand"] = hand(nb_joueurs, gros_dico)
             gros_dico["suite"] = suite(gros_dico["couleurs"])
             gros_dico["information_token"] = information_token(nb_joueurs)
             gros_dico["fuse_token"] = fuze_token()
@@ -137,7 +139,7 @@ if __name__ == '__main__':
                     on = False
 
                 else :
-                    print("je suis dans la boucle")
+                    pass
                 
                 memory = gros_dico["fuse_token"]
                 time.sleep(5)
