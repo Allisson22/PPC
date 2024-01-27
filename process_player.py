@@ -23,7 +23,7 @@ def action_possible(socket_player,digit,data,handplayer):
             annoncer_cartes(int(joueur),val,digit,data)
         else :
             message_client(socket_player,"0 Vous n'avez plus de jetons d'information")
-            action_possible(socket_player,digit,data)
+            action_possible(socket_player,digit,data,handplayer)
     if reponse == "jouer" :
         carte = message_client(socket_player,"1 Quelle carte ? (de 1 à 5)",["1","2","3","4","5"])
         jouer_carte(int(carte)-1,digit,data,handplayer)
