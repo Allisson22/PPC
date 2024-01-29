@@ -79,7 +79,7 @@ def receive_message(socket_player,digit,handplayer,data):
         message_client(socket_player,f"0 ###")
         if info[3] == "annoncé" and info[6] == f"{digit+1}":
             val = info[9]
-            for i in range(5):
+            for i in range(len(data["hand"][f"{digit}"])):
                 for j in range(2):
                     if str(data["hand"][f"{digit}"][i][j]) == str(val):
                         handplayer[i][j] = val
