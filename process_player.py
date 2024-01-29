@@ -8,7 +8,7 @@ import signal
 import os
 
 def action_possible(socket_player,digit,data,handplayer):
-    message_client(socket_player,"0 C'est votre tour, voud pouvez :\n  Donner informations\n  Jouer une carte sur une suite")
+    message_client(socket_player,"0 C'est votre tour, vous pouvez :\n  Donner informations\n  Jouer une carte sur une suite")
     reponse = message_client(socket_player,"1 information ou jouer ?",["information","jouer"])
     if reponse == "information" :
         if data["information_token"] > 0 :
@@ -24,11 +24,11 @@ def action_possible(socket_player,digit,data,handplayer):
         else :
             message_client(socket_player,"0 Vous n'avez plus de jetons d'information")
             action_possible(socket_player,digit,data,handplayer)
-    if reponse == "jouer" :
-        carte = message_client(socket_player,"1 Quelle carte ? (de 1 à 5)",["1","2","3","4","5"])
-        jouer_carte(int(carte)-1,digit,data,handplayer)
+    if reponse == "jouer" :        
+        carte = message_client(socket_player,f"1 Quelle carte ? (de 1 à {len(data['hand'][f'{digit}'])})",[f'{i}' for i in range(1,len(data['hand'][f'{digit}'])+1)])
+        jouer_carte(int(carte)-1,digit,data,handplayer,socket_player)
 
-def jouer_carte(index_carte,digit,data,handplayer):
+def jouer_carte(index_carte,digit,data,handplayer,socket_player):
     pioche = data["deck"]
     main_joueur = data["hand"]
     (couleur,num) = main_joueur[f"{digit}"][index_carte]
@@ -38,15 +38,24 @@ def jouer_carte(index_carte,digit,data,handplayer):
         data["suite"] = suite_correcte
         if num == 5 :
             data["information_token"] += 1
+            message_client(socket_player,f"0 Vous avez posé un {num} {couleur}\n  +1 jeton d'information")
+        else :
+            message_client(socket_player,f"0 Vous avez posé un {num} {couleur}")
     else :
         data["fuse_token"] -=1
+        message_client(socket_player,f"0 Vous avez posé un {num} {couleur}\n  -1 jeton d'amorçage")
         if num == 5 :
             data["fuse_token"] = 0
-    nouvelle_carte = pioche.pop(randint(0,len(pioche)-1))
-    data["deck"] = pioche
-    handplayer[index_carte] = ["?","?"]
-    main_joueur[f"{digit}"][index_carte] = nouvelle_carte
-    data["hand"] = main_joueur
+    if len(pioche) != 0 :
+        nouvelle_carte = pioche.pop(randint(0,len(pioche)-1))
+        data["deck"] = pioche
+        handplayer[index_carte] = ["?","?"]
+        main_joueur[f"{digit}"][index_carte] = nouvelle_carte
+        data["hand"] = main_joueur
+    else :
+        handplayer.pop([index_carte])
+        main_joueur[f"{digit}"].pop([index_carte])
+
     que = sysv_ipc.MessageQueue(data["key"])
     message = f"Joueur {digit+1} a joué un {num} {couleur}"
     for i in range(data['nb_joueurs']) :
@@ -133,7 +142,7 @@ def player_main(data,socket_player,digit_player,sem_server,sem_player) :
                 message_client(socket_player, '0 Un 5 a été défaussé')
                 os.kill(os.getpid(), signal.SIGKILL)
             if sig == signal.SIGINT :
-                message_client(socket_player, '0 Tous les fuze token ont été utilisés')
+                message_client(socket_player, "0 Tous les jetons d'amorçage ont été utilisés")
                 os.kill(os.getpid(), signal.SIGKILL)
 
     signal.signal(signal.SIGUSR1, handler)

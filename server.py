@@ -133,7 +133,7 @@ if __name__ == '__main__':
                         for pid in child_processes:
                             os.kill(pid, signal.SIGINT)
                         on = False   
-                elif len(gros_dico["deck"]) == 0 :
+                elif len(gros_dico["deck"]) == 0 and len(gros_dico["hand"][str(gros_dico['turn']%gros_dico['nb_joueurs'])]) == 0:
                     for pid in child_processes:
                         os.kill(pid, signal.SIGUSR1)
                     on = False
