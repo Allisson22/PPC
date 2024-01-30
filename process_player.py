@@ -53,8 +53,9 @@ def jouer_carte(index_carte,digit,data,handplayer,socket_player):
         main_joueur[f"{digit}"][index_carte] = nouvelle_carte
         data["hand"] = main_joueur
     else :
-        handplayer.pop([index_carte])
-        main_joueur[f"{digit}"].pop([index_carte])
+        handplayer.pop(index_carte)
+        main_joueur[f"{digit}"].pop(index_carte)
+        data["hand"] = main_joueur
 
     que = sysv_ipc.MessageQueue(data["key"])
     message = f"Joueur {digit+1} a joué un {num} {couleur}"
