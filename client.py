@@ -3,6 +3,11 @@ import socket
 HOST = "localhost"
 PORT = 6816
 
+def choix() :
+    rep = input("réponse> ")
+    if rep == "":
+        rep = choix()
+    return rep
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -13,9 +18,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             val, message = mess[0], mess[2:]
             print(message)
             if int(val) == 1 :
-                rep = input("réponse> ")
+                rep = choix()
                 client_socket.sendall(rep.encode())
-            elif (message == "Le deck est vide" or message == "Tous les fuze token ont été utilisés" or message == "Un 5 a été défaussé") :
+            elif int(val) == 2 :
                 on = False
             else :
                 client_socket.sendall('Nothing'.encode())

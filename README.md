@@ -1,5 +1,13 @@
 # PPC
 
+## Préliminaire
+
+Il vous faut la librarie sysv_ipc téléchargeable [ici](http://semanchuk.com/philip/sysv_ipc/), puis, dans le répertoire du dossier, tapez la commande suivante:
+
+```bash
+login@hostame:~$ python3 setup.py install --user 
+```
+
 ## Lancement du jeu
 
 Pour démarer le jeu lancer le fichier server.py, puis dans un second terminal, lancer le fichier client.py et annoncer le nombre de joueur quand celà vous sera demandé. Le nombre maximum de joueur est 8
@@ -20,7 +28,7 @@ Si vous voulez donner une information, vous devez annoncer le numéro du joueur 
 
 ### Pas d'inquiétudes
 
-Si vous vous trompez lors de l'écriture des réponses le messages vous est renvoyez, et si vous ne savez pas quoi répondre, les réponses acceptaboles sont affichés à l'écran, souvent entre parenthèse.
+Si vous vous trompez lors de l'écriture des réponses le messages vous est renvoyez, et si vous ne savez pas quoi répondre, les réponses acceptables sont affichées à l'écran, souvent entre parenthèse.
 
 ## Déroulement des tours de vos coéquipiers
 

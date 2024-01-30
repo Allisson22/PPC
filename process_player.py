@@ -133,16 +133,16 @@ def player_main(data,socket_player,digit_player,sem_server,sem_player) :
     def handler(sig, _):
             if sig == signal.SIGUSR1 :
                 if data["victoire"] :
-                    message_client(socket_player, '0 Vous avez GAGNÉ !!!!!')
+                    message_client(socket_player, '2 Vous avez GAGNÉ !!!!!')
                     os.kill(os.getpid(), signal.SIGKILL)
                 else :
-                    message_client(socket_player, '0 Le deck est vide')
+                    message_client(socket_player, '2 Le deck est vide')
                     os.kill(os.getpid(), signal.SIGKILL)
             if sig == signal.SIGUSR2 :
-                message_client(socket_player, '0 Un 5 a été défaussé')
+                message_client(socket_player, '2 Un 5 a été défaussé')
                 os.kill(os.getpid(), signal.SIGKILL)
             if sig == signal.SIGINT :
-                message_client(socket_player, "0 Tous les jetons d'amorçage ont été utilisés")
+                message_client(socket_player, "2 Tous les jetons d'amorçage ont été utilisés")
                 os.kill(os.getpid(), signal.SIGKILL)
 
     signal.signal(signal.SIGUSR1, handler)
